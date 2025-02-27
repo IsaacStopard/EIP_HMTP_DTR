@@ -4,35 +4,33 @@
 
 This GitHub repository provides the code for the paper. We ran the model using R version 4.2.1.
 
-#### Last updated: 15/07/2024
+#### Last updated: 27/02/2025
 
 #### scripts 
 
-:one: *read_libraries_data.R* - script to source commonly used data and load packages.
+:one: *1_run_SMFA.R* - script to fit the model of mosquito infection dynamics during standard membrane feeding assays.
 
-:two: *vector_species_comparison_temp_only.R* - script to compare the extrinsic incubation period (EIP) and human-to-mosquito transmission probability (HMTP) estimates. Generates Figure 2.
+:two: *2_vector_species_comparison_temp_only.R* - script to compare the extrinsic incubation period (EIP) and human-to-mosquito transmission probability (HMTP) estimates. Generates Figure 2.
 
-:three: *variance_comparison.R* - script to estimate the Erlang distribution shape parameter.
+:three: *3_variance_comparison.R* - script to estimate the Erlang distribution shape parameter.
 
-:four: *run_SMFA.R* - script to fit the model of mosquito infection dynamics during standard membrane feeding assays.
+:four: *4_temp_BF.R* - script to predict the EIP and HMTP in Tiefora, Burkina Faso, using the best fitting model.
 
-:five: *run_SMFA.R* - script to fit the model of mosquito infection dynamics during standard membrane feeding assays.
+:five: *5_spz_prev.R* - script to fit the generalised additive models to the previously published human biting rate data.
 
-:six: *format_temp_data.R* - script to wrangle and interpolate the temperature data.
-
-:seven: *microclimate.R* - script to predict the EIP and HMTP in Tiefora, Burkina Faso, using the best fitting model.
-
-:eight: *spz_prev.R* - script to fit the generalised additive models to the previously published human biting rate data.
-
-:nine: *EIR_fit.R* - script to fit the malaria transmission model to the sporozoite prevalence data from Tiefora.
+:six: *6_EIR_fit.R* - script to fit the Ross-Macdonald type malaria transmission model to the sporozoite prevalence data from Tiefora.
 
 #### helper scripts
 
-:one: *read_bt_data.R* - script to read and format the biting time data.
+:one: *read_libraries_data.R* - script to source commonly used data and load packages.
 
-:two: *data_functions.R*
+:two: *read_bt_data.R* - script to read and format the biting time data.
 
-:three: *model_functions.R*
+:three: *data_functions.R*
+
+:four: *model_functions.R*
+
+:five: *format_temp_data.R* - script to wrangle and interpolate the temperature data.
 
 ### Notes
 
