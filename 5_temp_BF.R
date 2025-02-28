@@ -10,7 +10,7 @@ source(file = "utils/model_functions.R"); source(file = "utils/read_libraries_da
 ######################################################
 ##### mosquito biting time from the Burkina Faso #####
 ######################################################
-source(file = "read_bt_data.R")
+source(file = "utils/read_bt_data.R")
 
 ggsave(file = "results/figures/Figure_A7.pdf", 
 ggplot(data = rbind(bt_density_outdoor %>% mutate(location = "Outdoor"),
@@ -166,8 +166,6 @@ params <- c(mu = 0.1, shape = 47, v_EIP = TRUE)
 state <- c(U = 0, E = c(1, rep(0, params[["shape"]]-1)),  I = 0)
 
 out_m <- vector(mode = "list", length = nrow(u_f))
-# out_l <- vector(mode = "list", length = nrow(u_f))
-# out_u <- vector(mode = "list", length = nrow(u_f))
 
 for(i in 1:nrow(u_f)){ 
   
