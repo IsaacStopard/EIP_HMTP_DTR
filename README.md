@@ -41,3 +41,7 @@ This GitHub repository provides the code for the paper. We ran the model using R
 :warning: This model is under development, so code may change without notice.
 
 :warning: No liability is accepted by the authors.
+
+:warning: The EIP and HMTP TPCs for *Anopheles gambiae* and *Anopheles stephensi* will need to be obtained from the original papers:
+- Suh, Eunho, et al. "Estimating the effects of temperature on transmission of the human malaria parasite, Plasmodium falciparum." Nature Communications 15.1 (2024): 3230.
+- Stopard, Isaac J., Thomas S. Churcher, and Ben Lambert. "Estimating the extrinsic incubation period of malaria using a mechanistic model of sporogony." PLoS computational biology 17.2 (2021): e1008658.
