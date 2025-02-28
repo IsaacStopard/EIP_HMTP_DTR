@@ -14,11 +14,13 @@ This GitHub repository provides the code for the paper. We ran the model using R
 
 :three: *3_variance_comparison.R* - script to estimate the Erlang distribution shape parameter.
 
-:four: *4_temp_BF.R* - script to predict the EIP and HMTP in Tiefora, Burkina Faso, using the best fitting model.
+:four: *4_format_temp_data.R* - script to wrangle and interpolate the temperature data.
 
-:five: *5_spz_prev.R* - script to fit the generalised additive models to the previously published human biting rate data.
+:five: *5_temp_BF.R* - script to predict the EIP and HMTP in Tiefora, Burkina Faso, using the best fitting model.
 
-:six: *6_EIR_fit.R* - script to fit the Ross-Macdonald type malaria transmission model to the sporozoite prevalence data from Tiefora.
+:six: *6_spz_prev.R* - script to fit the generalised additive models to the previously published human biting rate data.
+
+:seven: *7_EIR_fit.R* - script to fit the Ross-Macdonald type malaria transmission model to the sporozoite prevalence data from Tiefora.
 
 #### helper scripts
 
@@ -29,8 +31,6 @@ This GitHub repository provides the code for the paper. We ran the model using R
 :three: *data_wrangling_functions.R* - functions used across scripts to wrangle SMFA data and extract values from the model fits.
 
 :four: *model_functions.R* - SMFA ODE model and helper functions.
-
-:five: *format_temp_data.R* - script to wrangle and interpolate the temperature data.
 
 ### Notes
 
