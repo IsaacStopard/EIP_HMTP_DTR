@@ -1,14 +1,20 @@
+# Author: Isaac J Stopard
+# Version: 1.0.0
+# Last updated: February 2025
+# Notes: script to fit the Ross-Macdonald type malaria transmission model to the sporozoite prevalence data from Tiefora
+
 rm(list = ls())
 
-source(file = "utils/model_functions.R"); source(file = "read_bt_data.R");
-source(file = "read_libraries_data.R")
+source(file = "utils/model_functions.R"); source(file = "utils/read_bt_data.R");
+source(file = "utils/read_libraries_data.R")
+
 ###########################################
 ##### reading in the temperature data #####
 ###########################################
 
 read_ERA5 <- function(file_){
   return(
-    as.data.frame(read_csv(file = file_) %>% #filter(time >= min(hourly_temp_data$f_date) & time <= max(hourly_temp_data$f_date)) %>% 
+    as.data.frame(read_csv(file = file_) %>%
                            mutate(temp = t2m -  273.5,
                                   f_date = time,
                                   Site = "Tiefora",
@@ -49,7 +55,7 @@ EIP_fun <- approxfun(mean_EIP$temp, mean_EIP$`50%`, yleft = max(mean_EIP$`50%`),
 ### calculating the daily HMTP given the temp and biting time data ###
 ######################################################################
 
-##### DTR-dependent model #####
+### DTR-dependent model
 delta_df <- expand.grid("date" = dates, "hour" = seq(0, 23.9, 0.1)) %>%
   mutate(days = difftime(date, "2015-01-01", units = "days")) %>% subset(date < "2019-01-01")
 
@@ -60,7 +66,7 @@ gen_delta_DTR_all <- function(i, delta_df, temp_fun, temp_data, fit, mean_temp =
   
   start_day <- delta_df[i,"days"][[1]]
   
-  start_time <- start_day + start_hour/24 #(start_hour  - 1 + u_f_b[i, "s_time"]%%1)/24
+  start_time <- start_day + start_hour/24 
   
   temp_in <- max(temp_fun(seq(start_time, start_time + (10/24), 0.0001)))
   temp_in <- (temp_in - mean_temp) / sd_temp # scaling so on same scale as parameter fits
@@ -78,7 +84,7 @@ pred_DTR <- lapply(seq(1, nrow(delta_df)),
                    temp_data = temp_data,
                    fit = fit)
 
-#saveRDS(pred_DTR, file = "results/pred_DTR_EIR_fit.rds")
+saveRDS(pred_DTR, file = "results/pred_DTR_EIR_fit.rds")
 pred_DTR <- readRDS(file = "results/pred_DTR_EIR_fit.rds")
 
 pred_DTR <- bind_rows(pred_DTR)
@@ -102,7 +108,7 @@ daily_delta <- daily_delta[order(daily_delta$date),]
 
 delta_fun_DTR_dependent <- approxfun(x = daily_delta$days, y = daily_delta$delta, yleft = NA, yright = NA, method = "constant") # function
 
-##### DTR independent model HMTP #####
+### DTR independent model HMTP
 
 temp_data$DTR_ind_monthly_delta <- t(sapply((temp_data$monthly_temp - mean_temp)/sd_temp, gen_delta, fit = fit))[,2]
 
@@ -161,8 +167,6 @@ beta_c <- diff(log(spline_ma_pad$p)) + c_mu # mosquito birth rates assuming a co
 
 beta_daily <- diff(log(spline_ma_pad$p)) + subset(temp_data, hour == 0)$daily_mu[1:(nrow(spline_ma_pad)-1)]
 beta_monthly <- diff(log(spline_ma_pad$p)) + subset(temp_data, hour == 0)$monthly_mu[1:(nrow(spline_ma_pad)-1)]
-
-
 
 beta_fun_c <- approxfun(x = seq(0, (nrow(spline_ma_pad)-2)), y = beta_c, yright = NA, yleft = NA, method = "constant")
 
@@ -341,12 +345,6 @@ calc_ll <- function(par, # overdispersion parameter
   
   ov <- par[2]
   
-  # if(v_ov == TRUE){
-  #  
-  # } else{
-  #   ov <- ov_in
-  # }
-  
   data <- subset(data, year > min_year & year < max_year) %>% as.data.frame()
   
   m_sim <- run_malaria_model(scale_m = scale_m,
@@ -448,7 +446,7 @@ for(i in 1:length(pred_vals)){
 
 
 spz_data$raw$z <- (spz_data$raw$tot_p / spz_data$raw$tot) * 100
-tot_hlc_m <- spz_data$raw_m %>% subset(Location = "IN") %>% group_by(Date, day_plot) %>% summarise(m_tot_hlc = mean(tot_hlc))
+tot_hlc_m <- spz_data$raw_m %>% subset(Location == "IN") %>% group_by(Date, day_plot) %>% summarise(m_tot_hlc = mean(tot_hlc))
 spz_data$raw$tot_hlc <- unlist(unname(as.vector(tot_hlc_m[match(spz_data$raw$Date, tot_hlc_m$Date), "m_tot_hlc"])))
 spz_data$raw$EIR <- (spz_data$raw$tot_p / spz_data$raw$tot) * spz_data$raw$tot_hlc
 
@@ -491,9 +489,9 @@ combs <- combs %>% mutate(model = case_when(model == 1 ~ "DTR-dependent",
 
 write.csv(combs, file = "results/EIR_fit.csv")
 
-###################################################
-##### sporozoite prevalence and mosquito data #####
-###################################################
+#################
+##### plots #####
+#################
 
 adjust_date <- function(df){
   
@@ -510,10 +508,6 @@ spz_data$pred_s_day <- adjust_date(spz_data$pred_s)
 
 spz_data$pred_m_day <- rbind(adjust_date(subset(spz_data$pred_m, Location == "IN")) %>% mutate(Location = "Inside"),
                              adjust_date(subset(spz_data$pred_m, Location == "OUT")) %>% mutate(Location = "Outside"))
-
-ggplot(data = spz_data$pred_m_day, aes(x = Date, y = p, group = Location)) + geom_line()
-
-#spz_data$pred_EIR_day <- adjust_date(spz_data$pred_EIR_day)
 
 spz_data$raw <- spz_data$raw %>% mutate(date_p = as.Date("2016-12-31", format = "%Y-%m-%d") + day_y,
                                         train = ifelse(year == 2018, "testing", "training"),
@@ -562,11 +556,12 @@ spz_plot <- ggplot() +
   geom_line(data = pred_vals[[12]], aes(x = date, y = z, group = factor(year), col = "Constant"), linewidth = 1.25) +
   theme(legend.position = c(0.15, 0.85), legend.box = "horizontal")
 
-png(file = "results/figures/sample_spz_m_EIR.png", width = 800, height = 800)
+ggsave(file = "results/figures/Figure_5.pdf",
 plot_grid(
     mos_plot,
     spz_plot,
   ncol = 1,
   labels = c("A", "B")
-)
-dev.off()
+), 
+width = 800/30, height = 800/30, units = "cm", device = "pdf")
+

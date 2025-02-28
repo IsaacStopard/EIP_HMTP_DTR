@@ -1,6 +1,7 @@
 # Description: R script to compare the Anopheles stephensi and Anopheles gambiae EIP PDFs
-# Version: 1.0
-# Date: 15/07/2024
+# Version: 1.0.0
+# Date: February 2025
+# Notes: script to compare the extrinsic incubation period (EIP) and human-to-mosquito transmission probability (HMTP) estimates.
 
 rm(list = ls())
 
@@ -8,9 +9,10 @@ rm(list = ls())
 ### functions ###
 #################
 
-source(file = "utils/functions_temp_only.R")
-source(file = "utils/vector_comp_functions.R")
-source(file = "read_libraries_data.R")
+source(file = "utils/read_libraries_data.R")
+
+fit_gambiae <- readRDS("data/fit_mSOS_temp_only_f2_f3.rds")
+fit_stephensi <- readRDS(file = "data/hierarchical_mSOS_all_temperature_model_fit")
 
 ############
 ### fits ###
@@ -93,11 +95,11 @@ calc_EIP_v <- function(EIP_index, temps, n_iter){
 
 EIP_plot_g <- calc_EIP_v(EIP_index = EIP_index_g, temps = temps_g, n_iter = 10000)
 EIP_plot_s <- calc_EIP_v(EIP_index = EIP_index_s, temps = temps_s, n_iter = 12000)
-saveRDS(EIP_plot_g, file = "EIP_gambiae.rds")      
-saveRDS(EIP_plot_s, file = "EIP_stephensi.rds")      
+saveRDS(EIP_plot_g, file = "data/EIP_gambiae.rds")      
+saveRDS(EIP_plot_s, file = "data/EIP_stephensi.rds")      
 
-EIP_plot_g <- readRDS(file = "EIP_gambiae.rds")
-EIP_plot_s <- readRDS(file = "EIP_stephensi.rds")
+EIP_plot_g <- readRDS(file = "data/EIP_gambiae.rds")
+EIP_plot_s <- readRDS(file = "data/EIP_stephensi.rds")
 
 EIP_plot <- ggplot() +
   geom_ribbon(data = rbind(EIP_plot_g %>% mutate(vector_species = "gambiae"),
@@ -243,15 +245,18 @@ fit_plot_lim <- ggplot(data = fits_plot_df %>% subset(temp %in% c(21, 27, 30)) %
   scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, 0.2)) +
   xlab("Days post infection")
 
-png(file = "results/figures/vector_plot.png", height = 450, width = 700)
-plot_grid(
+ggsave(
+  file = "results/figures/Figure_2.pdf", 
+  height = 450/20, width = 700/20,
+plot = plot_grid(
  fit_plot_lim,
  plot_grid(
    EIP_plot, HMTP_plot, nrow = 1, labels = c("B", "C")
  ),
  nrow = 2, labels = c("A",""),
  rel_heights = c(0.35, 0.5)
+),
+device = "pdf",
+units = "cm"
 )
-
-dev.off()
 

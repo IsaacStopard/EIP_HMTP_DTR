@@ -1,12 +1,13 @@
 # DTR impact within standard membrane feeding assays 
 # Author: Isaac J Stopard
-# Version: 1.0
-# Last updated: 06/08/2021
-# Notes: 
+# Version: 1.0.0
+# Last updated: February 2025
+# Notes: script to fit the model of mosquito infection dynamics during standard membrane feeding assays
+
 rm(list = ls())
 
 source(file = "utils/model_functions.R")
-source(file = "read_libraries_data.R")
+source(file = "utils/read_libraries_data.R")
 
 ###########
 ### EIP ###
@@ -23,6 +24,7 @@ EIP_90 <- gen_quantiles(EIP_index_all$EIP_90, temps_all)
 
 # loading the data
 # constant temperature data
+# pilot study data (index_g == 1) from Suh et al (https://www.nature.com/articles/s41467-024-47265-w) are not considered
 s_data_C <- read.csv(file = "data/processed/ES_new_constant_temp_spz_processed.csv") %>% 
   mutate(gametocytemia = round(gametocytemia, digits = 5), bt = 12, study = 1) %>% index_fun(variable = "gametocytemia", v_out = "index_g") %>% filter(index_g!=1)
 
@@ -30,7 +32,7 @@ s_data_DTR <- process_prevalence_data(
   read.csv(file = "data/DTR/DTR_spz_data.csv")
 ) %>% 
   mutate(gametocytemia = round(gametocytemia, digits = 5),
-         bt = 12, study = 1) %>% index_fun(variable = "gametocytemia", v_out = "index_g") %>% filter(index_g!=1)
+         bt = 12, study = 1) %>% index_fun(variable = "gametocytemia", v_out = "index_g")
 
 # data from the other studies
 
@@ -158,7 +160,7 @@ ll_1 <- calc_ll_all(delta_vt_in = FALSE, EIP_vt_in = FALSE, delta_fun_in = "mean
 # model 2
 ll_2 <- calc_ll_all(delta_vt_in = FALSE, EIP_vt_in = TRUE, delta_fun_in = "mean", min_h = 1, max_h = 21, s_h = 10)
 
-#saveRDS(list("ll_1" = ll_1, "ll_2" = ll_2), file = "data/ml_DTR_simulations_mean.rds")
+saveRDS(list("ll_1" = ll_1, "ll_2" = ll_2), file = "data/ml_DTR_simulations_mean.rds")
 
 ll_list <- readRDS(file = "data/ml_DTR_simulations_mean.rds")
 
@@ -245,7 +247,7 @@ pred_out <- lapply(seq(1, nrow(ml_in)), function(i){
   
 })
 
-#saveRDS(pred_out, file = "data/pred_out_novel_data.rds")
+saveRDS(pred_out, file = "data/pred_out_novel_data.rds")
 pred_out <- readRDS(file = "data/pred_out.rds")
 
 max_DPI <- left_join(unique(s_totals_l[,c("temp", "DTR", "bt")]), 
@@ -287,12 +289,11 @@ for(i in 1:nrow(ml_in)){
 
 ml_in$likelihood_r <- round(ml_in$likelihood, digits = 2)
 
-#ml_in$EIP <- gsub("a (mean temperature)", "mean", ml_in$EIP)
-#ml_in$EIP <- gsub("b (fluctuating temperature)", "fluctuating", ml_in$EIP)
 write.csv(ml_in[,c("EIP", "delta", "h", "likelihood_r", "Brier", "AUC")], file = "results/likelihood_table.csv")
 
-png(file = "results/figures/DTR_temperature_data.png", height = 700, width = 850)
-ggplot(data = subset(t_plot_df %>% mutate(mid = paste0("Temperature: ", mid, "°C"),
+ggsave(
+  file = "results/figures/Figure_A4.pdf",
+  ggplot(data = subset(t_plot_df %>% mutate(mid = paste0("Temperature: ", mid, "°C"),
                                             bt = paste0("Biting time: ZT",bt)), DPI <= 24 & mean == "FALSE"), aes(x = DPI, y = temp, col = factor(DTR))) + 
   geom_line(linewidth = 1.5, alpha = 0.95) +
     theme_bw() + scale_x_continuous(limits = c(0, 24), breaks = seq(0, 24, 4)) +
@@ -300,8 +301,11 @@ ggplot(data = subset(t_plot_df %>% mutate(mid = paste0("Temperature: ", mid, "°
     scale_colour_manual(values = c("#CC79A7", "#009E73", "#E69F00", "#56B4E9"), name = "DTR") +
     facet_wrap(~mid + bt) +
     scale_y_continuous(limits = c(12.5, 37.5), breaks = seq(15, 35, 5)) +
-    theme(text = element_text(size = 15))
-dev.off()
+    theme(text = element_text(size = 15)), 
+  device = "pdf",
+  height = 700/30, width = 850/30,
+  units = "cm"
+)
 
 s_totals_test <- s_totals_test %>% mutate(data_source = case_when(study == 1 ~ "Novel",
                                                  study == 2 ~ "Waite et al (2019)",
@@ -331,15 +335,19 @@ smfa_plot <- function(i, n = 2){
 
 bf_plot <- smfa_plot(4)
 
-png(file = "results/figures/DTR_simulations_testing_data.png", height = 550, width = 1000)
-bf_plot
-dev.off()
+ggsave(file = "results/figures/Figure_1.pdf",
+       bf_plot,
+       device = "pdf",
+       units = "cm",
+       height = 550/30, 
+       width = 1000/30)
 
-png(file = "results/figures/DTR_simulations_all.png", height = 1400, width = 1550)
+ggsave(
+  file = "results/figures/Figure_A1.pdf",
 plot_grid(
   plot_grid(
   smfa_plot(2, n = 2) + theme(legend.position = "none", plot.title = element_text(face = "bold")) +
-    ggtitle("model 2")+
+    ggtitle("model 2") +
     theme(title = element_text(size = 14)),
   
   smfa_plot(6, n = 2) + theme(legend.position = "none", plot.title = element_text(face = "bold")) +
@@ -365,181 +373,7 @@ plot_grid(
   labels = c("A", "B", "C", "D", "E", "F")
   ),
   get_legend(bf_plot), ncol = 2, rel_widths = c(1, 0.2)
+  ),
+height = 1400/25, width = 1550/25, units = "cm",
+device = "pdf"
 )
-dev.off()
-
-########################
-### explanatory plot ###
-########################
-
-# hours <- seq(0, 24, 0.1)
-# 
-# df <- data.frame(hour = hours, 
-#                  m_temp = c(temp_fun[[1]](hours/24)),
-#                  t = rep(19, length(hours))) %>% rowwise() %>% mutate(t_ = (m_temp - mean_temp)/sd_temp,
-#                                                                               delta = gen_delta(fit = fit, temp = t_)['50%'][[1]],
-#                                                                               PDR = 47/EIP_fun[[2]](m_temp))
-# 
-# df_delta <- bind_rows(lapply(seq(1, nrow(df)),function(i, df){
-#   return(data.frame("max_delta" = max(df[seq(1,i,1),"delta"]),
-#              "min_delta" = min(df[seq(1,i,1),"delta"]),
-#              "mean_delta" = mean(df[seq(1,i,1),"delta"]),
-#              "max_temp" = max(df[seq(1,i,1),"m_temp"]),
-#              "min_temp" = min(df[seq(1,i,1),"m_temp"]),
-#              "mean_temp_in" = mean(df[seq(1,i,1),"m_temp"])))
-# }, df = as.data.frame(df))) %>% rowwise() %>% mutate(max_temp_delta = gen_delta(fit = fit, temp = (max_temp - mean_temp)/sd_temp)['50%'][[1]],
-#                                   min_temp_delta = gen_delta(fit = fit, temp = (min_temp - mean_temp)/sd_temp)['50%'][[1]],
-#                                   mean_temp_delta = gen_delta(fit = fit, temp = (mean_temp_in - mean_temp)/sd_temp)['50%'][[1]])
-# 
-# df <- cbind(df, df_delta)
-# 
-# h_df <- data.frame("y_" = seq(11, 14, 1), "yend_" = seq(11, 14, 1), "xend_" = c(24, 16, 8, 0))
-# 
-# h_df_d <- data.frame("y_" = rep(0, 4),
-#                      "yend_" = c(df[which(df[,"hour"] == 0),"mean_delta"],
-#                                  df[which(df[,"hour"] == 8),"mean_delta"],
-#                                  df[which(df[,"hour"] == 16),"mean_delta"],
-#                                  df[which(df[,"hour"] == 24),"mean_delta"]), 
-#                      "xend_" = c(0, 8, 16, 24), 
-#                      "x" = c(0, 8, 16, 24),
-#                      "label" = c("h = 0", "h = 8", "h = 16", "h = 24"))
-# 
-# out_h <- bind_rows(lapply(seq(0, 24, 8), function(h_){
-#   run_diff_delta(h = h_, 
-#                         u_l = u_l, 
-#                         delta_vt = TRUE, EIP_vt = TRUE, delta_fun = "mean_delta", 
-#                         unique_t_DTR = unique_t_DTR,  fit = fit, mean_temp = mean_temp, sd_temp = sd_temp, v_EIP = FALSE) %>% mutate(h = h_)
-# }))
-# 
-# 
-# 
-# 
-# png(file = "report/h_plot.png", height = 1000, width = 800)
-# plot_grid(
-#   plot_grid(ggplot() + 
-#     geom_line(data = df, aes(x = hour, y = m_temp, linetype = factor(t)), size = 1.5, alpha = 0.75) +
-#   theme_bw() + theme(text = element_text(size = 15)) + 
-#   geom_segment(data = h_df, aes(x = 0, y =  y_, xend = xend_, yend = yend_, col = factor(xend_)),
-#                  arrow = arrow(length = unit(0.3, "cm")), size = 1.5) +
-#     scale_colour_viridis_d(name = "h") +
-#     scale_linetype_manual(name = "diurnal\ntemperature (°C)", labels = c("19±5"), values = c(1)) +
-#     ylab("Temperature (°C)") + xlab("Hours post infection") +
-#     scale_x_continuous(breaks = seq(0,24,4)), NULL, rel_widths = c(1, 0.05)),
-#   
-#   plot_grid(ggplot(data = df %>% gather(key = "delta_in", value = "delta_plot", max_delta, min_delta, mean_delta, max_temp_delta, min_temp_delta, mean_temp_delta)) + 
-#     geom_line(data = df, aes(x = hour, y = delta, linetype = delta_in), size = 1.7, alpha = 0.7, linetype = 2) +
-#               geom_line(aes(x = hour, y = delta_plot, colour = delta_in), size = 1.7, alpha = 0.7) +
-#     theme_bw() + theme(text = element_text(size = 15)) + 
-#   scale_colour_brewer(name = "Method to\nestimate the HMTP", 
-#                       palette = "BrBG",
-#                 #         values = scales::seq_gradient_pal("#E69F00", "#56B4E9", "Lab")(seq(0,1,length.out=7)),
-#                          labels = c(expression(paste("maximum ", delta)),
-#                                     expression(paste("maximum temperature ", delta)),
-#                                     expression(paste("mean ", delta)),
-#                                     expression(paste("mean temperature ", delta)),
-#                                     expression(paste("minimum ", delta)),
-#                                     expression(paste("minimum temperature ", delta)))
-#                       ) +
-#     ylab("Estimated HMTP") + xlab("The hours post infection (h) over which the HMTP is determined") +
-#   geom_segment(data = h_df_d, aes(x = x, y = yend_ - 0.05, xend = xend_, yend = yend_),
-#                arrow = arrow(length = unit(0.3, "cm")), size = 1.08) +
-#   geom_text(data = h_df_d, aes(x = x, y = yend_ + 0.05, label = label), size = 5) +
-#     scale_x_continuous(breaks = seq(0,24,4)),NULL, rel_widths = c(1, 0)),
-#   
-#   plot_grid(ggplot(data = na.omit(subset(out_h, temp %in% c(19) & DTR == 10 & bt == 12 & DPI < 50)),
-#          aes(x = DPI, y = s_prev, col = factor(h))) + geom_line(size = 1.5) +
-#     scale_colour_viridis_d(name = "h") +
-#     xlab("Days post infection") + ylab("Sporozoite prevalence") +
-#     scale_y_continuous(labels = scales::percent) + 
-#     theme_bw() + theme(text = element_text(size = 15)) +
-#       scale_x_continuous(limits = c(0, 50), breaks = seq(0,50,5)), 
-#     NULL, rel_widths = c(1, 0.1725)),
-#   
-#   nrow = 3, labels = c("A", "B", "C"), rel_widths = c(0.25, 1, 0.25), scale = 0.97
-# )
-# dev.off()
-
-# #################################################
-# ### running the model for higher temperatures ###
-# #################################################
-# 
-# # EIP models with different cutoff
-# c_temps <- seq(35, 38)
-# m_EIP_all <- bind_rows(sapply(c(Inf, c_temps), 
-#                  function(c_temp){
-#                    t <- seq(15, 45, 0.01)
-#                    EIP <- data.frame("temp" = t,
-#                                      "EIP" = EIP_fun[[2]](t), # to get the mean EIP
-#                                      "m_EIP" = rep(c_temp, length(t)))
-#                    EIP[which(t > c_temp), "EIP"] <- Inf
-#                    return(EIP)
-#                    }, 
-#                  simplify = FALSE))
-# png(file = "report/cutoff_sensitivity_PDF.png", height = 500, width = 850)
-# ggplot(data = m_EIP_all, aes(x = temp, y = 47/EIP)) +
-#   geom_line(size = 1.25) + theme_bw() + facet_wrap(~m_EIP) +
-#   theme(text = element_text(size = 15)) +
-#   xlab("Temperature (°C)") + ylab("Parasite development rate (shape / EIP)")
-# dev.off()
-# 
-# # EIP functions
-# EIP_fun_l <- vector(mode = "list", length = length(c_temps) + 1)
-# EIP_fun_l[[1]] <- EIP_fun[[2]]
-# p <- data.frame("temp" = seq(15, 45, 0.01),
-#                 "EIP" = EIP_fun[[2]](seq(15, 45, 0.01)))
-# 
-# for(i in 1:length(c_temps)){
-#   place <- p[which(p$temp <= c_temps[i]),]
-#   EIP_fun_l[[i+1]] <- approxfun(place$temp, place$EIP, yleft = max(mean_EIP$`50%`), yright = Inf, method = "linear")
-# }
-# 
-# # temperature functions
-# g_temps <- c(32.5)
-# temp_fun_l <- lapply(g_temps, function(i){
-#   approxfun(seq(0, 24 * max_time, 0.1)/24, 
-#                              gen_temp(i, 10, max_time, bt = 12))
-# })
-# 
-# # delta value of 1 - so just the infected mosquitoes
-# 
-# index_all <- expand.grid(seq(1,length(g_temps)), seq(1, (length(c_temps)+1)))
-# index_temp_ <- index_all[, 1]
-# index_EIP_ <- index_all[, 2]
-#  
-# out <- bind_rows(mapply(function(index_temp, 
-#                 index_EIP, 
-#                 state = c(U = (1 - 1)*1, E = c(1*1, rep(0, 47-1)),  I = 0),
-#                 t = seq(0, 70, 0.1)){
-#    params <- c(mu = 0.1, shape = 47, index_EIP = index_EIP, index_temp = index_temp)
-#     return(out_mc <- as.data.frame(ode(y = state, times = t, func = model_4_ht,
-#                                parms = params)) %>% rowwise() %>%
-#      mutate(M = U + sum(c_across("E1":paste0("E",params[["shape"]]))) + I,
-#             s_prev = I / M,
-#             index_temp = index_temp,
-#             index_EIP = index_EIP))
-# }, index_temp_, index_EIP_, SIMPLIFY = FALSE))
-# 
-# c_temps_i <- c(Inf, c_temps)
-# out$m_EIP <- c_temps_i[out$index_EIP]
-# out$temp <- g_temps[out$index_temp]
-# 
-# png(file = "report/DTR_simulations_sensitivity.png", height = 750, width = 500)
-# plot_grid(
-#   ggplot(data = m_EIP_all, aes(x = temp, y = 47/EIP)) +
-#   geom_line(size = 1.25) + theme_bw() + facet_wrap(~m_EIP, nrow = 3) +
-#   theme(text = element_text(size = 15)) +
-#   xlab("Temperature (°C)") + ylab("Parasite development rate (shape / EIP)"),
-#   
-#   plot_grid(NULL,
-#   ggplot(data = out %>% mutate(m_EIP = ifelse(is.infinite(m_EIP), NA, m_EIP)), 
-#        aes(x = time, y = s_prev, col = m_EIP, group = factor(m_EIP))) +
-#   theme_bw() + theme(text = element_text(size = 15)) +
-#   geom_line(size = 0.75) +
-#   coord_cartesian(xlim = c(0, 30)) +
-#   ylab("Sporozoite prevalence") +
-#   xlab("Days post infection") + scale_y_continuous(labels = scales::percent) +
-#   scale_colour_gradient(low = "#56B4E9", high = "#E69F00", na.value = "black",
-#                         name = ""), NULL, rel_heights = c(0.1, 0.75, 0.1), nrow = 3),
-#  nrow = 2, labels = c("A", "B")
-# )
-# dev.off()

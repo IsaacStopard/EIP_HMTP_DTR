@@ -1,14 +1,13 @@
 # Comparison of the Erlang distribution variance to the EIP PDF variances (with the same means) across a range of temperatures
 # Author: Isaac J Stopard
-# Version: 1.0
-# Last updated: 15/07/2024
-# Notes: 
+# Version: 1.0.0
+# Last updated: February 2025
+# Notes: script to estimate the Erlang distribution shape parameter
 
 rm(list = ls())
 
-source(file = "utils/functions_temp_only.R"); source(file = "utils/model_functions.R"); 
-source(file = "utils/vector_comp_functions.R");
-source(file = "read_libraries_data.R")
+source(file = "utils/model_functions.R"); 
+source(file = "utils/read_libraries_data.R")
 
 #################
 ### functions ###
@@ -179,8 +178,8 @@ roc_curves <- ggroc(list("m3" = m3_roc,
                          "mSOS" = mSOS_roc),
                size = 1.75, alpha = 0.8) +
     theme_bw() +
-    scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "", labels = c("model 3 (SMFA)", "mSOS")) +
-    geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), size = 1, linetype = 2, col = "grey75", inherit.aes = FALSE) +
+    scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "", labels = c("ODE model", "mSOS")) +
+    geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), linewidth = 1, linetype = 2, col = "grey75", inherit.aes = FALSE) +
     ylab("Sensitivity") + xlab("Specificity") + theme(text = element_text(size = 18))
   
 actual_fitted_plot <- ggplot(data = s_totals_c %>% gather(key = "model", value = "value", m3, mSOS), aes(x = prevalence, y = value, colour = model)) +
@@ -193,26 +192,26 @@ actual_fitted_plot <- ggplot(data = s_totals_c %>% gather(key = "model", value =
   ylab("Predicted sporozoite prevalence") +
   scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
   scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-  scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "", labels = c("model 3 (SMFA)", "mSOS")) +
+  scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "", labels = c("ODE model", "mSOS"))
 
 
-png(file = "results/figures/var_plot.png", height = 725, width = 725)
-plot_grid(
-  plot_grid(ggplot() + 
-  geom_pointrange(data = data_plot_v, aes(x = temp, y = mean, ymin = lower, ymax = upper), size = 0.85) + 
-    geom_line(data = plot_v_df,
-                     aes(x = temp, y = v), size = 1.5, alpha = 0.9, col = "#56B4E9") + theme_bw() +
-  theme(text = element_text(size = 15)) + ylab("Variance in the EIP") + xlab("Temperature (°C)") + 
-  scale_y_continuous(trans = "sqrt") +
-  scale_x_continuous(breaks = seq(18, 30, 2)),
-  
-  roc_curves + theme(legend.position = "none"),
-  ncol = 2, rel_widths = c(1, 1), labels = c("A", "B")),
-  
-  ggplot() +
-  geom_pointrange(data = s_totals_c %>% mutate(temp = paste0(temp, "°C")), #temp %in% c(19, 23, 27)
-                  aes(x = DPI, y = prevalence, ymin = lower, ymax = upper), 
-                  alpha = 0.75, shape = 21, fill = "grey30", size = 0.75) + 
+ggsave(file = "results/figures/Figure_A6.pdf",
+       plot_grid(
+         plot_grid(ggplot() + 
+                     geom_pointrange(data = data_plot_v, aes(x = temp, y = mean, ymin = lower, ymax = upper), size = 0.85) + 
+                     geom_line(data = plot_v_df, aes(x = temp, y = v), size = 1.5, alpha = 0.9, col = "#56B4E9") + 
+                     theme_bw() +
+                     theme(text = element_text(size = 15)) + ylab("Variance in the EIP") + xlab("Temperature (°C)") + 
+                     scale_y_continuous(trans = "sqrt") +
+                     scale_x_continuous(breaks = seq(18, 30, 2)),
+                   
+                   roc_curves + theme(legend.position = "none"),
+                   ncol = 2, rel_widths = c(1, 1), labels = c("A", "B")
+                   ),
+         ggplot() +
+           geom_pointrange(data = s_totals_c %>% mutate(temp = paste0(temp, "°C")), #temp %in% c(19, 23, 27)
+                           aes(x = DPI, y = prevalence, ymin = lower, ymax = upper), 
+                           alpha = 0.75, shape = 21, fill = "grey30", size = 0.75) + 
   facet_wrap(~temp, scales = "free_x") + 
   theme_bw() +
   geom_line(data =  rbind(g_fits[,c("DPI", "median", "temp")] %>% mutate(model = "mSOS",
@@ -222,15 +221,16 @@ plot_grid(
       aes(x = DPI, y = median, col = model, linetype = model), 
       size = 1.8, alpha = 0.9) +
   theme(text = element_text(size = 15)) +
-  scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "") +
-  scale_linetype_manual(name = "", values = c(1, 2)) +
+  scale_colour_manual(values = c("#56B4E9", "#E69F00"), name = "", labels = c("ODE model", "mSOS")) +
+  scale_linetype_manual(name = "", values = c(1, 2), labels = c("ODE model", "mSOS")) +
   xlab("Days post infection") + 
   ylab("Sporozoite prevalence") +
   scale_y_continuous(labels = scales::percent),
   ncol = 1,
   labels = c("","C"), rel_heights = c(1, 1.35)
+  ),
+  height = 725/30, width = 725/30, units = "cm", device = "pdf"
 )
-dev.off()
 
 
 

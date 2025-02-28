@@ -1,13 +1,18 @@
+# Author: Isaac J Stopard
+# Version: 1.0.0
+# Last updated: February 2025
+# Notes: script to predict the EIP and HMTP in Tiefora, Burkina Faso, using the best fitting model
+
 rm(list = ls())
 
-source(file = "utils/data_functions.R"); source(file = "utils/model_functions.R"); source(file = "read_libraries_data.R")
+source(file = "utils/model_functions.R"); source(file = "utils/read_libraries_data.R")
 
 ######################################################
 ##### mosquito biting time from the Burkina Faso #####
 ######################################################
 source(file = "read_bt_data.R")
 
-png(file = "results/figures/bite_time_dens.png", height = 400, width = 700)
+ggsave(file = "results/figures/Figure_A7.pdf", 
 ggplot(data = rbind(bt_density_outdoor %>% mutate(location = "Outdoor"),
                     bt_density_indoor %>% mutate(location = "Indoor")), 
        aes(x = Hour, y = d)) +
@@ -17,10 +22,12 @@ ggplot(data = rbind(bt_density_outdoor %>% mutate(location = "Outdoor"),
   theme_bw() + theme(text = element_text(size = 18),
                      axis.text.x = element_text(angle = -90)) +
   facet_wrap(~location) +
-  scale_y_continuous(limits = c(0,0.25))
-dev.off()
+  scale_y_continuous(limits = c(0,0.25)),
+height = 400/30, width = 700/30, units = "cm", device = "pdf"
+)
 
 ##### temperature data #####
+# must run format_temp_data.R first
 temp_data_rds <- readRDS(file = "data/temp_data.rds")
 n_na <- temp_data_rds$n_na
 temp_fun <- temp_data_rds$temp_data_fun
@@ -30,14 +37,10 @@ u_t <- temp_data_rds$u_t
 
 temp_data_plot <- bind_rows(temp_data) #
 
-temp_data_plot <- rbind(temp_data_plot, subset(temp_data_plot, house == "ERA5") %>% mutate(Location = "Outdoor"))
-
 DTR_data <- temp_data_plot %>% mutate(s_date = as.Date(f_date)) %>% group_by(s_date, Site, Location, Hut, house, Month) %>% 
   summarise(DTR = max(Temp) - min(Temp)) %>% mutate(Location = ifelse(house == "ERA5", "ERA5", Location))
 
-DTR_data$Location <- factor(DTR_data$Location, levels = c("ERA5", "Outdoor", "Indoor"))
-
-png(file = "results/figures/DTR_micro_plot.png", height = 450, width = 700)
+ggsave(file = "results/figures/Figure_A2.pdf", 
 ggplot(data = DTR_data %>% subset(Site == "Tiefora" & Month > 8),
        aes(x = house, y = DTR, fill = Location, group = interaction(house, Location))) +
   geom_boxplot(alpha = 0.75) +
@@ -45,8 +48,12 @@ ggplot(data = DTR_data %>% subset(Site == "Tiefora" & Month > 8),
   xlab("House") +
   ylab("Diurnal temperature range (DTR) (°C)") +
   scale_fill_manual(values = c("#56B4E9","#CC79A7",  "#E69F00"), name = "Temperature\ndata") +
-  scale_y_continuous(breaks = seq(0, 35, 5))
-dev.off()  
+  scale_y_continuous(breaks = seq(0, 35, 5)),
+height = 450/30, width = 700/30, units = "cm", device = "pdf"
+)
+
+# adding ERA5 data so is plotted both both indoors and outdoors
+temp_data_plot <- rbind(temp_data_plot, subset(temp_data_plot, house == "ERA5") %>% mutate(Location = "Outdoor"))
 
 t_plot <- 
   plot_grid(
@@ -71,16 +78,16 @@ t_plot <-
       facet_wrap(~Location + house) +
       theme_bw() + theme(text = element_text(size = 18)) +
       #geom_smooth(formula = y ~ x, se = FALSE, method = "loess", col = "grey50", alpha = 0.25, size = 0.5, linetype = 2) +
-      xlab("Date and time (hour - day - month") +
+      xlab("Date (day - month)") +
       ylab("Temperature (°C)") +
       scale_x_datetime(date_labels = "%d %b",
                    date_breaks = "2 month"),
     nrow = 2, labels = c("A", "B"), rel_heights = c(1, 1.5)
   )
 
-png(file = "results/figures/BF_temp_data.png", height = 850, width = 1100)
-t_plot
-dev.off()
+ggsave(file = "results/figures/Figure_A3.pdf", 
+       t_plot,
+       height = 850/30, width = 1100/30, units = "cm", device = "pdf")
 
 temp_data_plot_tiefora <- subset(temp_data_plot, Site == "Tiefora" & house == "mean" | Site == "Tiefora" & house == "ERA5" & Location == "Outdoor") %>% 
          mutate(Location = ifelse(house == "ERA5", "ERA5", Location))
@@ -208,7 +215,7 @@ for(i in 1:nrow(u_f)){
   }
 }
 
-#saveRDS(out_m, file = "results/DTR_season_model_outputs_m_r.rds")
+saveRDS(out_m, file = "results/DTR_season_model_outputs_m_r.rds")
 
 out_m <- readRDS(file = "results/DTR_season_model_outputs_m_r.rds")
 
@@ -268,8 +275,6 @@ sum_out_m <- sum_out_m %>% mutate(Location = ifelse(Hut == "ERA5", "ERA5", Locat
                               month = lubridate::month(s_date),
                               year = lubridate::year(s_date))
 
-
-
 subset(sum_out_m, Location == "ERA5")[subset(sum_out_m, Location == "ERA5")$EIP_50 == min(subset(sum_out_m, Location == "ERA5")$EIP_50),]
 subset(sum_out_m, Location == "ERA5")[subset(sum_out_m, Location == "ERA5")$EIP_50 == max(subset(sum_out_m, Location == "ERA5")$EIP_50),]
 
@@ -314,7 +319,7 @@ EIP_plot <- ggplot(data = EIP_plot_df,
 
 s_out_m_plot <- s_out_m_bt %>% subset(Hut=="ERA5" & Location=="Indoor" | Hut == "mean") %>% mutate(Location = ifelse(Hut == "ERA5", "ERA5", Location))
 
-png(file = "results/figures/EIP_bite_time.png", height = 570, width = 1040)
+ggsave(file = "results/figures/Figure_A4.pdf",
 ggplot(data = s_out_m_plot %>% gather(key = "percentile", value = "EIP", EIP_10, EIP_50, EIP_90) %>% 
                            mutate(percentile = ifelse(percentile == "EIP_10", "EIP[10]",
                                                       ifelse(percentile == "EIP_50", "EIP[50]", "EIP[90]"))), 
@@ -324,8 +329,8 @@ ggplot(data = s_out_m_plot %>% gather(key = "percentile", value = "EIP", EIP_10,
   theme_bw() + theme(text = element_text(size = 18)) +
   xlab("Hour of infection") + ylab("Predicted EIP (days)") +
   scale_y_continuous(breaks = seq(8, 18, 2), limits = c(7, 18))+
-  scale_x_discrete(breaks = seq(0, 22, 2))
-dev.off()
+  scale_x_discrete(breaks = seq(0, 22, 2)), 
+       height = 570/30, width = 1040/30, units = "cm", device = "pdf")
 
 ###########################################################
 ### estimating delta given the DTR data and biting time ###
@@ -343,7 +348,8 @@ u_f_b$f_date <- ymd_h(paste(u_f_b$date, floor(u_f_b$s_time)))
 
 pred_DTR <- lapply(seq(1, nrow(u_f_b)), gen_delta_DTR, u_f_b = u_f_b, temp_fun = temp_fun, temp_data = temp_data)
 
-#saveRDS(pred_DTR, file = "results/pred_DTR.rds")
+saveRDS(pred_DTR, file = "results/pred_DTR.rds")
+
 pred_DTR <- readRDS(file = "results/pred_DTR.rds")
 sum(is.na(pred_DTR))
 
@@ -368,23 +374,21 @@ u_f_b_plot <- u_f_b %>% group_by(date, index, f_date, Location, Site, Hut, s_tim
 
 u_f_b_plot$Location <- factor(u_f_b_plot$Location, levels = c("ERA5", "Outdoor", "Indoor"))
 
-png(file = "results/figures/pred_HMTP_s_time.png", height = 700, width = 950)
+ggsave(file = "results/figures/Figure_4.pdf", 
 ggplot(data = u_f_b_plot, 
        aes(x = s_time_f, y = mean, group = interaction(Location, Site, Hut, month, s_time_f),
            fill = Location, col = Location)) +
-  geom_boxplot(alpha = 0.5, outlier.size = 0.5, col = "grey40") +
-  #geom_bar(stat = "identity", alpha = 0.25, col = "black", position = "dodge") +
-  #geom_line() +
+  geom_boxplot(alpha = 0.5, outlier.size = 0.5, col = "grey30") +
   facet_wrap(~month) +
   theme_bw() + theme(text = element_text(size = 18)) +
   scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, 0.2), limits = c(0, 1)) +
   scale_x_continuous(breaks = seq(0, 22, 2)) +
-  ylab("Predicted HMTP for each hourl and day of the month") +
+  ylab("Predicted HMTP for each hour and day of the month") +
   xlab("Hour of infection") +
   scale_fill_manual(values = c("#56B4E9","#CC79A7",  "#E69F00"), name = "Temperature\ndata") +
-  scale_colour_manual(values = c("#56B4E9","#CC79A7",  "#E69F00"), name = "Temperature\ndata")
-dev.off()
-
+  scale_colour_manual(values = c("#56B4E9","#CC79A7",  "#E69F00"), name = "Temperature\ndata"),
+height = 700/25, width = 1000/25, units = "cm", device = "pdf"
+)
 
 # assuming mosquitoes only bite during the recorded times
 hourly_u_f_b <- hourly_u_f_b %>% subset(s_time_f %in% bt_density_all$s_time) # calculating the daily expected value due to differences in the biting times
@@ -426,9 +430,8 @@ delta_plot <- ggplot(data = delta_plot_df,
                date_breaks = "2 month",
                limits = as.Date(c("01/01/2020", "31/12/2020"), format = "%d/%m/%Y"))
 
-
-png(file = "results/figures/pred_EIP_HMTP.png", height = 1000, width = 1100)
-plot_grid(
+ggsave(file = "results/figures/Figure_3.pdf", 
+       plot_grid(
   plot_grid(
     temp_plot + theme(legend.position = "none"),
     EIP_plot + theme(legend.position = "none"),
@@ -438,5 +441,6 @@ plot_grid(
   get_legend(EIP_plot),
   nrow = 1, 
   rel_widths = c(0.9, 0.28)
-  )
-dev.off()
+  ),
+height = 1000/30, width = 1100/30, units = "cm", device = "pdf"
+)
