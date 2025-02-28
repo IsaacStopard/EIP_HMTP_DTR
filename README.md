@@ -26,9 +26,9 @@ This GitHub repository provides the code for the paper. We ran the model using R
 
 :two: *read_bt_data.R* - script to read and format the biting time data.
 
-:three: *data_functions.R*
+:three: *data_wrangling_functions.R* - functions used across scripts to wrangle SMFA data and extract values from the model fits.
 
-:four: *model_functions.R*
+:four: *model_functions.R* - SMFA ODE model and helper functions.
 
 :five: *format_temp_data.R* - script to wrangle and interpolate the temperature data.
 
