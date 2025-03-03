@@ -292,7 +292,7 @@ ml_in$likelihood_r <- round(ml_in$likelihood, digits = 2)
 write.csv(ml_in[,c("EIP", "delta", "h", "likelihood_r", "Brier", "AUC")], file = "results/likelihood_table.csv")
 
 ggsave(
-  file = "results/figures/Figure_A4.pdf",
+  file = "results/figures/Figure_A5.pdf",
   ggplot(data = subset(t_plot_df %>% mutate(mid = paste0("Temperature: ", mid, "°C"),
                                             bt = paste0("Biting time: ZT",bt)), DPI <= 24 & mean == "FALSE"), aes(x = DPI, y = temp, col = factor(DTR))) + 
   geom_line(linewidth = 1.5, alpha = 0.95) +
