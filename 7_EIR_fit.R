@@ -5,8 +5,9 @@
 
 rm(list = ls())
 
-source(file = "utils/model_functions.R"); source(file = "utils/read_bt_data.R");
+source(file = "utils/model_functions.R") 
 source(file = "utils/read_libraries_data.R")
+source(file = "utils/read_bt_data.R")
 
 ###########################################
 ##### reading in the temperature data #####
@@ -151,12 +152,6 @@ spz_data$raw$day_plot <- difftime(spz_data$raw$Date, "2015-01-01", units = c("da
 spz_data$raw_m$day_plot <- difftime(spz_data$raw_m$Date, "2015-01-01", units = c("days"))
 
 spline_ma <- subset(spz_data$pred_m, Location == "IN") %>% mutate(day = day_y)
-
-# spline_ma_pad <- left_join(data.frame(day = seq(0, max(spline_ma$day))),
-#                       spline_ma[,c("p", "day")], by = c("day")) %>% 
-#   mutate(p = ifelse(is.na(p), mean(spline_ma$p), p))
-  
-
 
 # replicating the same mosquito seasonality for each year
 spline_ma_pad <- spline_ma[rep(seq(1, nrow(spline_ma)),5),] %>% mutate(day_o = day,
