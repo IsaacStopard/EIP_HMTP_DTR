@@ -546,9 +546,9 @@ spz_plot <- ggplot() +
   #scale_fill_manual(name = "year", values = c("#000000", "#0072B2", "#009E73")) +
   coord_cartesian(xlim = as.POSIXct(c("01/01/2016", "01/01/2019"), format = "%d/%m/%Y")) +
   scale_y_sqrt(limits = c(0, 1), breaks = seq(0, 1, 0.2), labels = scales::percent) +
-  geom_line(data = pred_vals[[10]], aes(x = date, y = z, group = factor(year), col = "DTR-dependent"), linewidth = 1.25) +
+  geom_line(data = pred_vals[[10]], aes(x = date, y = z, col = "DTR-dependent"), linewidth = 1.25) +
   geom_line(data = pred_vals[[11]], aes(x = date, y = z, col = "DTR-independent"), linewidth = 1.25) +
-  geom_line(data = pred_vals[[12]], aes(x = date, y = z, group = factor(year), col = "Constant"), linewidth = 1.25) +
+  geom_line(data = pred_vals[[12]], aes(x = date, y = z, col = "Constant"), linewidth = 1.25) +
   theme(legend.position = c(0.15, 0.85), legend.box = "horizontal")
 
 ggsave(file = "results/figures/Figure_5.pdf",
