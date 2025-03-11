@@ -2,7 +2,7 @@
 
 ## Authors: Isaac J. Stopard, Antoine Sanou, Eunho Suh, Lauren J. Cator, Matthew B. Thomas, W. Moussa Guelbéogo, N'Falé Sagnon, Ben Lambert & Thomas S. Churcher 
 
-This GitHub repository provides the code for the paper. We ran the model using R version 4.2.1.
+This GitHub repository provides the code for the paper.
 
 #### Last updated: 27/02/2025
 
